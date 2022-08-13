@@ -1,3 +1,11 @@
+/*
+ * RoutingHdtn.h
+ *
+ *  Created on: July 26, 2022
+ *      Author: timothy recker
+ *      Email: tjr@berkeley.edu
+ */
+
 #ifndef SRC_NODE_DTN_ROUTINGHDTN_H_
 #define SRC_NODE_DTN_ROUTINGHDTN_H_
 
@@ -5,55 +13,12 @@
 #include <src/node/dtn/routing/RoutingDeterministic.h>
 #include <src/node/dtn/SdrModel.h>
 #include "src/hdtn/message.h"
+#include "src/hdtn/HdtnModel.h"
 
 #define HDTN_ROUTER_ADDRESS "localhost"
+#define HDTN_SCHEDULER_ADDRESS "127.0.0.1"
 #define HDTN_BOUND_SCHEDULER_PUBSUB_PATH 10000
 #define HDTN_BOUND_ROUTER_PUBSUB_PATH 11000
-
-
-class HdtnModel
-{
-public:
-  HdtnModel(string host, int port, int eid);
-  ~HdtnModel();
-  void connect(zmq::socket_type socktype);
-  void disconnect();
-protected:
-  int port;
-  std::string path;
-  zmq::socket_t *sock;
-  zmq::context_t *ctx;
-  bool connected;
-  int eid_;
-};
-
-class RouterListener : public HdtnModel
-{
-public:
-//  RouterListener(int port);
-//  ~RouterListener();
-  using HdtnModel::HdtnModel;
-  bool check();
-  void connect();
-  void disconnect();
-  int getNextHop();
-  int getFinalDest();
-private:
-  int nextHop;
-  int finalDest;
-};
-
-class SchedulerModel : public HdtnModel
-{
-public:
-//  SchedulerModel(int port);
-//  ~SchedulerModel();
-  using HdtnModel::HdtnModel;
-  bool send(IreleaseStopHdr*);
-  bool send(IreleaseStartHdr*);
-  void connect();
-  void disconnect();
-};
 
 class RoutingHdtn : public RoutingDeterministic
 {

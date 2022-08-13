@@ -2,7 +2,6 @@
  * message.h
  *
  *  Created on: Aug 11, 2022
- *      Author: tim
  */
 
 #ifndef SRC_HDTN_MESSAGE_H_
@@ -11,7 +10,7 @@
 #define HDTN_MSGTYPE_ILINKUP (0xFC03)     // Link available event from scheduler
 #define HDTN_MSGTYPE_ILINKDOWN (0xFC04)    // Link unavailable event from scheduler
 #define HDTN_MSGTYPE_ROUTEUPDATE (0xFC07) //Route Update Event from Router process
-
+#define ZMQ_POLL_TIMEOUT 250
 
 struct cbhe_eid_t {
     uint64_t nodeId;
@@ -58,6 +57,5 @@ struct IreleaseStopHdr {
     uint64_t time;
     uint64_t contact;
 };
-
 
 #endif /* SRC_HDTN_MESSAGE_H_ */
