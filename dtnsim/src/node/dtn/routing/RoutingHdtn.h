@@ -23,22 +23,24 @@
 class RoutingHdtn : public RoutingDeterministic
 {
 public:
-  RoutingHdtn(int eid, SdrModel *sdr, ContactPlan *contactPlan, string *path, string *cpJson, bool useHdtnRouter);
+  RoutingHdtn(int eid, SdrModel *sdr, ContactPlan *contactPlan, string *path, string *cpJson, bool useHdtnRouter, int num);
   virtual ~RoutingHdtn();
   virtual void routeAndQueueBundle(BundlePkt* bundle, double simTime);
   virtual void contactStart(Contact *c);
   virtual void contactEnd(Contact *c);
 private:
-  map<int, int> hopsTable; // map dest->hop to memoize for simulator performance
-  map<int, int> destTable; // map contact->dest so we can check when to reset hopsTable
+  vector<int> destinations;
+//  map<int, int> hopsTable; // map dest->hop to memoize for simulator performance
+  map<int, vector<int>> destTable; // map contact->dest so we can check when to reset hopsTable
   RouterListener *listener;
   SchedulerModel *scheduler;
-  bool useHdtnRouter;
+  bool useHdtnRouter_;
+  int nodeNum_;
   std::string hdtnSourceRoot;
   std::string cpFile;
   std::string configFile;
   int (RoutingHdtn::*route_fn)(BundlePkt *bundle);
-  virtual void runHdtn(int eid, int service);
+  virtual void runHdtn();
   virtual void killHdtn();
   virtual int routeHdtn(BundlePkt *bundle);
   virtual int routeLibcgr(BundlePkt *bundle);

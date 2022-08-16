@@ -11,21 +11,22 @@
 #include <signal.h>
 #include <cmath>
 
-RoutingHdtn::RoutingHdtn(int eid, SdrModel * sdr, ContactPlan * contactPlan, string * path, string * cpJson, bool useHdtnRouter)
+RoutingHdtn::RoutingHdtn(int eid, SdrModel * sdr, ContactPlan * contactPlan, string * path, string * cpJson, bool useHdtnRouter, int nodeNum)
 : RoutingDeterministic(eid, sdr, contactPlan)
 {
 	if (this->eid_ > 0) {
 		this->hdtnSourceRoot = string(*path);
 		this->cpFile = string(*cpJson);
-		this->useHdtnRouter = useHdtnRouter;
+		useHdtnRouter_ = useHdtnRouter;
+		nodeNum_ = nodeNum;
 		if (useHdtnRouter) {
 			this->route_fn = &RoutingHdtn::routeHdtn;
-			this->listener = new RouterListener("localhost", HDTN_BOUND_ROUTER_PUBSUB_PATH + this->eid_, this->eid_);
+			this->listener = new RouterListener("localhost", HDTN_BOUND_ROUTER_PUBSUB_PATH + this->eid_, this->eid_, nodeNum);
 			listener->connect();
 			this->scheduler = new SchedulerModel("127.0.0.1", HDTN_BOUND_SCHEDULER_PUBSUB_PATH + this->eid_, this->eid_);
 			scheduler->connect();
-				createRouterConfigFile();
-				runHdtn(4, 1);
+			createRouterConfigFile();
+			runHdtn();
 		} else {
 			this->route_fn = &RoutingHdtn::routeLibcgr;
 		}
@@ -35,7 +36,7 @@ RoutingHdtn::RoutingHdtn(int eid, SdrModel * sdr, ContactPlan * contactPlan, str
 RoutingHdtn::~RoutingHdtn()
 {
 	if (this->eid_ > 0) {
-		if (useHdtnRouter) {
+		if (useHdtnRouter_) {
 //			killHdtn();
 			scheduler->disconnect();
 			listener->disconnect();
@@ -45,14 +46,23 @@ RoutingHdtn::~RoutingHdtn()
 	}
 }
 
-void RoutingHdtn::runHdtn(int destEid, int serviceClass) {
+void RoutingHdtn::runHdtn() {
+	int serviceClass = 1;
+	string destinationEids;
+
+	for (int eid = 1; eid <= nodeNum_; ++eid) {
+		if (eid != eid_) {
+			destinationEids += "ipn:" + to_string(eid) + "." + to_string(serviceClass) + " ";
+		}
+	}
+
 	string hdtnExec = this->hdtnSourceRoot + "/build/module/router/hdtn-router";
 	string execString(
 		hdtnExec +
 		string(" --contact-plan-file=") + this->cpFile +
-		string(" --dest-uri-eid=ipn:") + to_string(destEid) + string(".") + to_string(serviceClass) +
+		string(" --dest-uri-eid=") + destinationEids +
 		string(" --hdtn-config-file=") + this->configFile +
-		string(" &"));
+		string(" & sleep 1"));
 
 	cout << "[RoutingHdtn] Running command: " << endl << execString << endl;
 	system(execString.c_str());
@@ -68,10 +78,17 @@ void RoutingHdtn::killHdtn() {
 }
 
 int RoutingHdtn::routeHdtn(BundlePkt * bundle) {
-	// wait to receive message from router
-	while(!listener->check());
+	listener->check();
+	return listener->getNextHop(bundle->getDestinationEid());
+//	 wait to receive message from router
+//	while(!listener->check());
 
-	return listener->getNextHop();
+//	vector<int> route = listener->getHops();
+//	for (int cid : route) {
+//		destTable[cid].push_back(bundle->getDestinationEid());
+//	}
+
+//	return listener->getNextHop(bundle->getDestinationEid());
 }
 
 int RoutingHdtn::routeLibcgr(BundlePkt * bundle) {
@@ -86,28 +103,44 @@ int RoutingHdtn::routeLibcgr(BundlePkt * bundle) {
 
 void RoutingHdtn::routeAndQueueBundle(BundlePkt * bundle, double simTime)
 {
-	int nextHop;
+//	int nextHop = 0;
+//	bool update = false;
 	int dest = bundle->getDestinationEid();
 
-	map<int, int>::iterator entry = hopsTable.find(dest);
-	if (entry == hopsTable.end()) {
+	int nextHop = listener->getNextHop(dest);
+	if (nextHop == -1) {
+//		sleep(1);
+//		cout << "routing..." << endl;
 		nextHop = (this->*route_fn)(bundle);
-		hopsTable[dest] = nextHop;
-	} else {
-		nextHop = entry->second;
 	}
 
-	cout << "[RoutingHdtn " << this->eid_ << "] next hop is " << nextHop << endl;
+	if (nextHop == -1) {
+		cerr << "Unable to route bundle" << endl;
+		throw;
+	}
+
+//	if (nextHop == 0) {
+////		map<int, int>::iterator entry = hopsTable.find(dest);
+////		if (entry == hopsTable.end() || entry->second <= 0) {
+//			nextHop = (this->*route_fn)(bundle);
+////		} else {
+////			nextHop = entry->second;
+//		}
+//	}
+
+//	hopsTable[dest] = nextHop;
+
+	cout << "[RoutingHdtn " << this->eid_ << "] next hop: " << nextHop << "->" << dest << endl;
 
 	// transmit or enqueue
 	bool success = attemptTransmission(bundle, nextHop);
 	if (success) {
 		// an active contact was found so try to transmit on it
-		cout << "[RoutingHdtn] placed bundle->" << bundle->getDestinationEid() << " on outduct" << endl;
+		cout << "[RoutingHdtn] placed bundle->" << dest << " on outduct" << endl;
 	} else {
 		// no active contact found. store and enqueue the bundle
 		enqueue(bundle, nextHop);
-		cout << "[RoutingHdtn] bundle->" << bundle->getDestinationEid() << " enqueued to " << nextHop << endl;
+		cout << "[RoutingHdtn " << eid_ << "] bundle->" << dest << " enqueued to " << nextHop << endl;
 	}
 }
 
@@ -118,9 +151,17 @@ void RoutingHdtn::contactStart(Contact *c)
 
 void RoutingHdtn::contactEnd(Contact *c)
 {
-	hopsTable.clear();
+//	vector<int> destinations = destTable[c->getId()];
+//	for (int d : destinations) {
+//		hopsTable.erase(d);
+//	}
+//	hopsTable.clear();
+//	for (int d : destTable[c->getId()]) {
+//		listener->clear(d);
+//	}
+//	destTable.erase(c->getId());
 
-	if (useHdtnRouter) {
+	if (useHdtnRouter_) {
 		IreleaseStopHdr msg;
 		cbhe_eid_t next;
 		next.nodeId = c->getDestinationEid();
@@ -136,12 +177,12 @@ void RoutingHdtn::contactEnd(Contact *c)
 
 		msg.contact = (uint64_t)c->getId();
 		msg.time = ceil(simTime().dbl());
-	//	cout << "[scheduler] time calculated is " << msg.time << endl;
+		cout << "[scheduler] time calculated is " << msg.time << endl;
 
 		if (!scheduler->send(&msg)) {
 			cerr << "[scheduler] unable to send" << endl;
 		} else {
-			cout << "[scheduler " << this->eid_ << "] SENT link up/down" << endl;
+			cout << "[scheduler " << this->eid_ << "] sent link down" << endl;
 		}
 	}
 

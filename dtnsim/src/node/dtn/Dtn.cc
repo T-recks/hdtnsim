@@ -132,10 +132,16 @@ void Dtn::initialize(int stage)
 		}
 		else if (routeString.compare("hdtn") == 0)
 		{
+			// get simulation parameters from Central
 			bool useHdtnRouter;
 			string hdtnsource = this->getParentModule()->getParentModule()->getSubmodule("central")->par("hdtnSourceRoot");
 			string cpfile = this->getParentModule()->getParentModule()->getSubmodule("central")->par("contactsFileJson");
 			string routingMode = this->getParentModule()->getParentModule()->getSubmodule("central")->par("hdtnRoutingMode");
+			// get bundle destinations from App
+//			App* app = check_and_cast<App*>(this->getParentModule()->getSubmodule("app"));
+//			vector<int> destinations = app->getDestinationEidVec();
+			int num = this->getSystemModule()->par("nodesNumber");
+//			int num = this->getModuleByPath("dtnsim")->par("nodesNumber");
 			if (routingMode.compare("hdtn-router") == 0) {
 				useHdtnRouter = true;
 			} else if (routingMode.compare("libcgr") == 0) {
@@ -144,7 +150,7 @@ void Dtn::initialize(int stage)
 				cout << "dtnsim error: unknown HDTN routing type: " << routingMode << endl;
 				exit(1);
 			}
-			routing = new RoutingHdtn(eid_, &sdr_, &contactPlan_, &hdtnsource, &cpfile, useHdtnRouter);
+			routing = new RoutingHdtn(eid_, &sdr_, &contactPlan_, &hdtnsource, &cpfile, useHdtnRouter, num);
 		}
 		else
 		{

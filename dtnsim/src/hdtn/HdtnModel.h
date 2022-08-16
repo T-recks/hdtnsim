@@ -11,6 +11,7 @@
 
 #include <string>
 #include <iostream>
+#include <map>
 #include <zmq.hpp>
 #include "src/hdtn/message.h"
 
@@ -35,15 +36,20 @@ protected:
 class RouterListener : public HdtnModel
 {
 public:
-  using HdtnModel::HdtnModel;
+//  using HdtnModel::HdtnModel;
+  RouterListener(string host, int port, int eid, int nodeNum);
   bool check();
   void connect();
   void disconnect();
-  int getNextHop();
-  int getFinalDest();
+  int getNextHop(int dest);
+//  int getFinalDest();
+  void clear();
+  bool clear(int dest);
+//  vector<int> getHops();
 private:
-  int nextHop;
-  int finalDest;
+  map<int, int> nextHop;
+//  int finalDest;
+//  vector<uint64_t> hops;
 };
 
 class SchedulerModel : public HdtnModel
