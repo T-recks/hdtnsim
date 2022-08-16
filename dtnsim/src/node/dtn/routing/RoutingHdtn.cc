@@ -25,7 +25,7 @@ RoutingHdtn::RoutingHdtn(int eid, SdrModel * sdr, ContactPlan * contactPlan, str
 			this->scheduler = new SchedulerModel("127.0.0.1", HDTN_BOUND_SCHEDULER_PUBSUB_PATH + this->eid_, this->eid_);
 			scheduler->connect();
 				createRouterConfigFile();
-				runHdtn(4, 1);
+				runHdtn(3, 1);
 		} else {
 			this->route_fn = &RoutingHdtn::routeLibcgr;
 		}
