@@ -1,4 +1,5 @@
 #include "Graphics.h"
+#include <fstream>
 
 Define_Module (Graphics);
 
@@ -28,17 +29,40 @@ void Graphics::initialize()
 		icon_path.append(icon);
 		dispStr.setTagArg("i", 0, icon_path.c_str());
 
-		// Set circular position
-		posRadius = numNodes * 250 / (2 * (3.1415));
-		posAngle = 2 * (3.1415) / ((float) numNodes);
-		posX = marginX + posRadius * cos((eid_ - 1) * posAngle) + posRadius;
-		posY = marginY + posRadius * sin((eid_ - 1) * posAngle) + posRadius;
-		dispStr.setTagArg("p", 0, posX);
-		dispStr.setTagArg("p", 1, posY);
 
-		// Extend background area
-		nodeModule->getParentModule()->getDisplayString().setTagArg("bgb", 0, 2 * marginX + 2 * posRadius);
-		nodeModule->getParentModule()->getDisplayString().setTagArg("bgb", 1, 4 * marginY + 2 * posRadius);
+//		ifstream f("/home/tim/array.txt");
+//
+//		vector<int> numbers;
+//
+//		string num;
+//
+//		if (!(f)) cout << "ERROR file could not be read" << endl;
+//
+//		while(getline(f, num, ',')) {
+//			int n = stoi(num);
+////			cerr << n << endl;
+//			numbers.push_back(n);
+//		}
+
+//		for (int n : numbers) {
+//			cout << n << endl;
+//		}
+
+		if (eid_ > 0) {
+//			int multiplier = numbers[eid_ - 1];
+
+			// Set circular position
+			posRadius = numNodes * 250 / (2 * (3.1415));
+			posAngle = 2 * (3.1415) / ((float) numNodes);
+			posX = marginX + posRadius * cos((eid_ - 1) * posAngle) + posRadius;
+			posY = marginY + posRadius * sin((eid_ - 1) * posAngle) + posRadius;
+			dispStr.setTagArg("p", 0, posX);
+			dispStr.setTagArg("p", 1, posY);
+
+			// Extend background area
+			nodeModule->getParentModule()->getDisplayString().setTagArg("bgb", 0, 2 * marginX + 2 * posRadius);
+			nodeModule->getParentModule()->getDisplayString().setTagArg("bgb", 1, 4 * marginY + 2 * posRadius);
+		}
 
 		// Place node 0 away from the network
 		if (eid_ == 0)
