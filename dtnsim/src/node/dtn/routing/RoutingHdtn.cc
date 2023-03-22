@@ -31,8 +31,9 @@ int RoutingHdtn::routeHdtn(BundlePkt * bundle) {
 	string execString(
 		hdtnExec +
 		string(" --contact-plan-file=") + this->cpFile +
-		string(" --dest-uri-eid=ipn:") + to_string(bundle->getDestinationEid()) + string(".1") +
+		//string(" --dest-uri-eid=ipn:") + to_string(bundle->getDestinationEid()) + string(".1") +
 		string(" --hdtn-config-file=") + this->configFile +
+		string(" --hdtn-distributed-config-file=") + this->hdtnSourceRoot + "/config_files/hdtn/hdtn_distributed_defaults.json" +
 		string(" &"));
 
 	cout << "[RoutingHdtn] Running command: " << endl << execString << endl;
@@ -124,7 +125,7 @@ void RoutingHdtn::createRouterConfigFile()
 
 	getcwd(cwd, sizeof(cwd));
 	chdir("../../");
-	path = "src/hdtn/template.json";
+	path = "src/hdtn/template.json.txt";
 
 	struct stat buf;
 	if (stat(path.c_str(), &buf)) {
@@ -147,18 +148,30 @@ void RoutingHdtn::createRouterConfigFile()
 		mkdir(path.c_str(), 0700);
 		chdir(path.c_str());
 
-		ofstream file("cfg.json");
-		if (!file) {
+		ofstream conf("cfg.json");
+		if (!conf) {
 			cerr << "can't open cfg" << endl;
 		}
 
-		file << temp.rdbuf();
-		file << "    \"myNodeId\": " << this->eid_ << "," << endl;
-		file << "    \"zmqRouterAddress\": \"localhost\"," << endl;
-		file << "    \"zmqBoundRouterPubSubPortPath\": " << HDTN_BOUND_ROUTER_PUBSUB_PATH << endl;
-		file << "}" << endl;
+		conf << temp.rdbuf();
+//		file << "    \"myNodeId\": " << this->eid_ << "," << endl;
+		conf << "    \"myNodeId\": " << this->eid_ << endl;
+//		file << "    \"zmqRouterAddress\": \"localhost\"," << endl;
+//		file << "    \"zmqBoundRouterPubSubPortPath\": " << HDTN_BOUND_ROUTER_PUBSUB_PATH << endl;
+		conf << "}" << endl;
 		temp.close();
-		file.close();
+		conf.close();
+
+		ofstream dist("dist.json");
+		if (!dist) {
+			cerr << "can't open distr" << endl;
+		}
+
+		dist << "{" << endl;
+		dist << "    \"zmqRouterAddress\": \"localhost\"," << endl;
+		dist << "    \"zmqConnectingRouterToBoundEgressPortPath\": " << HDTN_BOUND_ROUTER_PUBSUB_PATH << endl;
+		dist << "}" << endl;
+		dist.close();
 
 		chdir("../../");
 
