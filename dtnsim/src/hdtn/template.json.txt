@@ -13,6 +13,7 @@
     "maxIngressBundleWaitOnEgressMilliseconds": 2000,
     "neighborDepletedStorageDelaySeconds": 0,
     "zmqBoundRouterPubSubPortPath": 10200,
+    "zmqBoundTelemApiPortPath": 10305,
     "myRouterServiceId": 100,
     "bufferRxToStorageOnLinkUpSaturation": false,
     "maxLtpReceiveUdpPacketSizeBytes": 65536,
@@ -33,6 +34,7 @@
         "tryToRestoreFromDisk": false,
         "autoDeleteFilesOnExit": true,
         "totalStorageCapacityBytes": 8192000000,
+        "storageDeletionPolicy": "never",
         "storageDiskConfigVector": [
         
         ]
