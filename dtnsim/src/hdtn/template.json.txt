@@ -17,6 +17,7 @@
     "myRouterServiceId": 100,
     "bufferRxToStorageOnLinkUpSaturation": false,
     "maxLtpReceiveUdpPacketSizeBytes": 65536,
+    "fragmentBundlesLargerThanBytes": 0,
     "inductsConfig": {
         "inductConfigName": "myconfig",
         "inductVector": [
